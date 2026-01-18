@@ -10,4 +10,25 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
+}
+
+.row {
+  padding: 20q;
+  border: 1q solid black;
+  margin-bottom: 12px;
+}
+
+.row input {
+  width: 80vw;
+  max-width: 700px;
+  padding: 12px;
+  font-size: 16px;
+}
+
+.but button {
+  width: 30vw;
+  max-width: 250px;
+  padding: 8px;
+  font-size: 12px;
 }
