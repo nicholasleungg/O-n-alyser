@@ -17,6 +17,10 @@ body {
   padding: 20q;
   border: 1q solid black;
   margin-bottom: 12px;
+
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .row input {
@@ -24,6 +28,12 @@ body {
   max-width: 700px;
   padding: 12px;
   font-size: 16px;
+}
+
+.language-select {
+  padding: 12px;
+  font-size: 16px;
+  cursor: pointer;
 }
 
 .but button {

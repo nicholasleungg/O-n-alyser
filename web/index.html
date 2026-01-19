@@ -5,7 +5,7 @@
 <head>
     <title>O(n)alyser</title>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="src/style.css">
+    <link rel="stylesheet" href="/src/style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 
@@ -14,12 +14,20 @@
     <div class="container">
         <div class="row">
             <input type="text" placeholder="Copy and paste your code here" required>
+
+            <select class="language-select" id="selected_lang">
+                <option value="" disabled selected>Select Language</option>
+                <option value="java">Java</option>
+                <option value="python">Python</option>
+                <option value="c">C</option>
+            </select>
         </div>
 
-        <div class="but">
+        <div class="but" id="but">
             <button type="button">Calculate time complexity</button>
         </div>
     </div>
     
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
