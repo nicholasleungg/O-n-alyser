@@ -1,6 +1,8 @@
 import './style.css'
+import { analyse } from "./engine/analyse"
+import type { Lang } from "./engine/profiles";
 
-function analyse(input: string, chosen_lang: string): void {
+function render(input: string, chosen_lang: string): void {
   console.log("Input text:", input);
   console.log("Chosen language:", chosen_lang);
 
@@ -19,7 +21,7 @@ function enteredPressed(): void {
   const langEl = document.getElementById("chosen_lang") as HTMLSelectElement;
 
   const input = inputEl.value.trim();
-  const chosen_lang = langEl.value;
+  const chosen_lang = langEl.value as Lang;
 
   if (!input) {
     return;
@@ -30,6 +32,8 @@ function enteredPressed(): void {
   }
 
   analyse(input, chosen_lang);
+
+  render(input, chosen_lang);
 }
 
 const entered = document.getElementById("entered") as HTMLButtonElement;
