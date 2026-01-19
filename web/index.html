@@ -13,9 +13,9 @@
 
     <div class="container">
         <div class="row">
-            <input type="text" placeholder="Copy and paste your code here" required>
+            <input id = "input" type="text" placeholder="Copy and paste your code here" required>
 
-            <select class="language-select" id="selected_lang">
+            <select id="chosen_lang" class="language-select">
                 <option value="" disabled selected>Select Language</option>
                 <option value="java">Java</option>
                 <option value="python">Python</option>
@@ -23,8 +23,14 @@
             </select>
         </div>
 
-        <div class="but" id="but">
-            <button type="button">Calculate time complexity</button>
+        <div class="but">
+            <button id="entered" type="button">Calculate time complexity</button>
+        </div>
+
+        <div class="output" id="output" hidden>
+            <p><strong>Language:</strong> <span id="out_lang"></span></p>
+            <p><strong>Input text:</strong></p>
+            <pre id="out_text"></pre>
         </div>
     </div>
     

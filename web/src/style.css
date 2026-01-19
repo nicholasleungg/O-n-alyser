@@ -42,3 +42,19 @@ body {
   padding: 8px;
   font-size: 12px;
 }
+
+.output {
+  margin-top: 16px;
+  width: 80vw;
+  max-width: 900px;
+  border: 1q solid black;
+  padding: 16px;
+}
+
+.output pre {
+  margin: 0;
+  padding: 12px;
+  border: 1q solid black;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
