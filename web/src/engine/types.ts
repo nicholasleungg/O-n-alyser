@@ -12,7 +12,6 @@ export type AnalysisResult = {
     loops: { count: number, maxDepth: number}
     tags: string[]
     time: Complexity;
-    space: Complexity;
     why: string[]
 }
 

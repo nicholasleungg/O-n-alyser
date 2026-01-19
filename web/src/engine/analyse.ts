@@ -1,9 +1,35 @@
-import type { AnalysisResult } from "./types";
+import type { AnalysisResult, Complexity } from "./types";
 import { PROFILES, type Lang } from "./profiles";
 
 function countMatches(text: string, re: RegExp): number {
     return (text.match(re) ?? []).length;
 }
+
+const BIG_O_RANK: Record<string, number> = {
+    "O(?)": -1,
+    "O(1)": 0,
+    "O(log n)": 1,
+    "O(n)": 2,
+    "O(n log n)": 3,
+    "O(n^2)": 4,
+    "O(n^3)": 5,
+    "O(2^n)": 6,
+    "O(n!)": 7,
+};
+
+function rankBigO(bigO: string): number {
+    return BIG_O_RANK[bigO] ?? -1;
+}
+
+function pickDominant(candidates: Complexity[]): Complexity {
+    const known = candidates.filter(c => c.bigO !== "O(?)");
+    const list = known.length ? known : candidates;
+
+    return list.reduce((best, cur) => {
+    return rankBigO(cur.bigO) > rankBigO(best.bigO) ? cur : best;
+    }, list[0] ?? { bigO: "O(?)", confidence: 0.25 });
+}
+
 
 export function analyse(code: string, chosen_lang: Lang = "auto"): AnalysisResult {
     const raw = code ?? "";
@@ -63,20 +89,35 @@ export function analyse(code: string, chosen_lang: Lang = "auto"): AnalysisResul
     // 4) Time Guess
     // -----------------------
     
-    let timeBigO = []
-    let timeConf = 0.25
+    const timeCandidates: Complexity[] = [];
 
     if (maxDepth >= 2) {
-        timeBigO = "O(n^2)"
-        timeConf = 0.5
-        why.push("Nested blocks suggest quadratic behaviour.")
+        timeCandidates.push({ bigO: "O(n^2)", confidence: 0.45 });
+        why.push("Nested loop depth >= 2 suggests quadratic behaviour.");
     }
-    
-    else if (hasSort && loopCount == 0) {
-        timeBigO = "O(n log n)"
-        timeConf = 0.55;
+
+    if (hasSort) {
+        timeCandidates.push({ bigO: "O(n log n)", confidence: 0.55 });
+        why.push("Detected sorting (often O(n log n)).");
     }
-    else if (loopCount >= 1) {
-        
+
+    if (loopCount >= 1) {
+        timeCandidates.push({ bigO: "O(n)", confidence: 0.45 });
+        why.push("Detected loop(s); linear is a common dominant term.");
+    }
+
+    if (timeCandidates.length === 0) {
+        timeCandidates.push({ bigO: "O(1)", confidence: 0.25 });
+        why.push("No strong patterns detected (simple heuristics).");
+    }
+
+    // choose dominating term
+    const dominantTime = pickDominant(timeCandidates);
+
+    return {
+        loops: {count: loopCount, maxDepth},
+        tags,
+        time: dominantTime,
+        why,
     }
 }
