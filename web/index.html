@@ -13,7 +13,11 @@
 
     <div class="container">
         <div class="row">
-            <input id = "input" type="text" placeholder="Copy and paste your code here" required>
+            <textarea
+                id="input"
+                placeholder="Copy and paste your code here"
+                rows="8"
+            ></textarea>
 
             <select id="chosen_lang" class="language-select">
                 <option value="" disabled selected>Select Language</option>
@@ -29,6 +33,8 @@
 
         <div class="output" id="output" hidden>
             <p><strong>Language:</strong> <span id="out_lang"></span></p>
+            <p><strong>Time complexity:</strong> <span id="out_time"></span></p>
+            <p><strong>Confidence:</strong> <span id="out_conf"></span></p>
             <p><strong>Input text:</strong></p>
             <pre id="out_text"></pre>
         </div>
