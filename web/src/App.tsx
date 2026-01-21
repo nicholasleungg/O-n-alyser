@@ -1,45 +1,92 @@
-<!DOCTYPE html>
-<html lang="en">
+import { useState } from "react";
+import "./style.css";
 
-<!-- Testing comment -->
-<head>
-    <title>O(n)alyser</title>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="/src/style.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-</head>
+import { analyse } from "./engine/analyse";
+import type { AnalysisResult } from "./engine/types";
+import type { Lang } from "./engine/profiles";
 
-<body>
+export default function App() {
 
-    <div class="container">
-        <div class="row">
-            <textarea
-                id="input"
-                placeholder="Copy and paste your code here"
-                rows="8"
-            ></textarea>
+  const [input, setInput] = useState("");
+  const [chosenLang, setChosenLang] = useState<Lang>("auto");
 
-            <select id="chosen_lang" class="language-select">
-                <option value="" disabled selected>Select Language</option>
-                <option value="java">Java</option>
-                <option value="python">Python</option>
-                <option value="c">C</option>
-            </select>
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+
+  function enteredPressed() {
+
+    const trimmed = input.trim();
+
+    if (!trimmed) return;
+    if (chosenLang === "auto") return;
+
+    const res = analyse(trimmed, chosenLang);
+    setResult(res);
+  }
+
+  return (
+    <div className="container">
+
+      <div className="row">
+
+        <textarea
+          id="input"
+          placeholder="Copy and paste your code here"
+          rows={8}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+
+        <select
+          id="chosen_lang"
+          className="language-select"
+          value={chosenLang}
+          onChange={(e) => setChosenLang(e.target.value as Lang)}
+        >
+          <option value="auto" disabled>
+            Select Language
+          </option>
+          <option value="java">Java</option>
+          <option value="python">Python</option>
+          <option value="c">C</option>
+        </select>
+
+      </div>
+
+      <div className="but">
+        <button id="entered" type="button" onClick={enteredPressed}>
+          Calculate time complexity
+        </button>
+      </div>
+
+      {result && (
+        <div className="output" id="output">
+
+          <p>
+            <strong>Language:</strong>
+            <span id="out_lang"> {chosenLang}</span>
+          </p>
+
+          <p>
+            <strong>Time complexity:</strong>
+            <span id="out_time"> {result.time.bigO}</span>
+          </p>
+
+          <p>
+            <strong>Confidence:</strong>
+            <span id="out_conf">
+              {" "}{Math.round(result.time.confidence * 100)}%
+            </span>
+          </p>
+
+          <p><strong>Input text:</strong></p>
+
+          <pre id="out_text">
+            {input}
+          </pre>
+
         </div>
+      )}
 
-        <div class="but">
-            <button id="entered" type="button">Calculate time complexity</button>
-        </div>
-
-        <div class="output" id="output" hidden>
-            <p><strong>Language:</strong> <span id="out_lang"></span></p>
-            <p><strong>Time complexity:</strong> <span id="out_time"></span></p>
-            <p><strong>Confidence:</strong> <span id="out_conf"></span></p>
-            <p><strong>Input text:</strong></p>
-            <pre id="out_text"></pre>
-        </div>
     </div>
-    
-    <script type="module" src="/src/main.ts"></script>
-</body>
-</html>
+  );
+}
