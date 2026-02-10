@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./style.css";
 
-import { analyse } from "./engine/analyse";
+import { analyseWithTreeSitter } from "./engine/treeSitter";
 import type { AnalysisResult } from "./engine/types";
 import type { Lang } from "./engine/profiles";
 
@@ -12,14 +12,14 @@ export default function App() {
 
   const [result, setResult] = useState<AnalysisResult | null>(null);
 
-  function enteredPressed() {
+  async function enteredPressed() {
 
     const trimmed = input.trim();
 
     if (!trimmed) return;
     if (chosenLang === "auto") return;
 
-    const res = analyse(trimmed, chosenLang);
+    const res = await analyseWithTreeSitter(trimmed, chosenLang);
     setResult(res);
   }
 
