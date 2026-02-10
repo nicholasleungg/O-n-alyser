@@ -82,26 +82,67 @@ function detectGlobalLogProgression(text: string, lang: Exclude<Lang, "auto">): 
 	return /(?:\*=|\/=|>>=|<<=)\s*\d+/.test(text);
 }
 
-function detectRecursionComplexity(text: string): "O(n)" | "O(2^n)" | "O(n!)" | null {
-	const functionRe = /\b(?:def|[A-Za-z_]\w*\s+)([A-Za-z_]\w*)\s*\([^)]*\)\s*[{:]?/g;
+function detectRecursionComplexity(text: string, lang: Exclude<Lang, "auto">): "O(n)" | "O(2^n)" | "O(n!)" | null {
+	if (lang === "python") {
+		const lines = text.split("\n");
+		for (let i = 0; i < lines.length; i += 1) {
+			const header = lines[i];
+			const m = header.match(/^\s*def\s+([A-Za-z_]\w*)\s*\(/);
+			if (!m) continue;
+
+			const fnName = m[1];
+			const defIndent = header.match(/^\s*/)?.[0].length ?? 0;
+			const body: string[] = [];
+
+			for (let j = i + 1; j < lines.length; j += 1) {
+				const line = lines[j];
+				if (!line.trim()) {
+					body.push(line);
+					continue;
+				}
+
+				const indent = line.match(/^\s*/)?.[0].length ?? 0;
+				if (indent <= defIndent) break;
+				body.push(line);
+			}
+
+			const bodyText = body.join("\n");
+			const escaped = fnName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			const recursiveCalls = (bodyText.match(new RegExp(`\\b${escaped}\\s*\\(`, "g")) ?? []).length;
+			if (recursiveCalls === 0) continue;
+			const recursiveInsideLoop = new RegExp(`\\bfor\\b[\\s\\S]*\\b${escaped}\\s*\\(`, "m").test(bodyText)
+				|| new RegExp(`\\bwhile\\b[\\s\\S]*\\b${escaped}\\s*\\(`, "m").test(bodyText);
+
+			if (/\breturn\b[\s\S]*\*\s*[A-Za-z_]\w*\s*\(/m.test(bodyText)) return "O(n!)";
+			if (recursiveInsideLoop) return "O(n!)";
+			if (recursiveCalls >= 2) return "O(2^n)";
+			return "O(n)";
+		}
+
+		return null;
+	}
+
 	const names = new Set<string>();
-	let m: RegExpExecArray | null;
-	while ((m = functionRe.exec(text))) {
-		names.add(m[1]);
+	{
+		const declRe = /^\s*(?:public|private|protected|static|final|synchronized|native|abstract|\s)*[A-Za-z_]\w*(?:\s*<[^>]+>)?(?:\s*\[[^\]]+\])?\s+([A-Za-z_]\w*)\s*\([^)]*\)\s*\{/gm;
+		let m: RegExpExecArray | null;
+		while ((m = declRe.exec(text))) names.add(m[1]);
 	}
 
 	for (const name of names) {
 		const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 		const calls = text.match(new RegExp(`\\b${escaped}\\s*\\(`, "g")) ?? [];
 		if (calls.length <= 1) continue;
+		const recursiveCalls = calls.length - 1;
 
 		if (/\breturn\b[\s\S]*\*\s*[A-Za-z_]\w*\s*\(/m.test(text)) return "O(n!)";
-		if (calls.length >= 3) return "O(2^n)";
+		if (recursiveCalls >= 2) return "O(2^n)";
 		return "O(n)";
 	}
 
 	return null;
 }
+
 
 function canonicalLoopComplexity(maxDepth: number, hasLogLoop: boolean, loopCount: number): "O(1)" | "O(log n)" | "O(n)" | "O(n^2)" | "O(n^3)" {
 	if (loopCount === 0) return "O(1)";
@@ -179,7 +220,7 @@ export function analyse(code: string, chosenLang: Lang = "auto"): AnalysisResult
 		why.push("Detected sorting operation; normalized to canonical O(n log n).");
 	}
 
-	const recursionBigO = detectRecursionComplexity(text);
+	const recursionBigO = detectRecursionComplexity(text, lang);
 	if (recursionBigO) {
 		tags.push("recursion");
 		timeCandidates.push({ bigO: recursionBigO, confidence: recursionBigO === "O(n)" ? 0.52 : 0.76 });
