@@ -68,6 +68,58 @@ function bigOFromFactors(factors: string[]): string {
 	return `O(${factors.join("*")})`;
 }
 
+function classifyBound(bound: string): "constant" | "log n" | "n" {
+	const clean = bound.trim();
+
+	if (!clean) return "n";
+
+	if (/^\d+$/.test(clean)) return "constant";
+
+	if (/\blog\b|\bln\b/i.test(clean)) return "log n";
+
+	if (/^[A-Za-z_]\w*$/.test(clean)) return "n";
+
+	if (/^[A-Za-z_]\w*\s*[-+*/]\s*\d+$/.test(clean)) return "n";
+
+	if (/^\d+\s*[-+*/]\s*[A-Za-z_]\w*$/.test(clean)) return "n";
+
+	return "n";
+}
+
+function normalizeFactors(rawFactors: string[]): string[] {
+	const counts = new Map<string, number>();
+
+	for (const raw of rawFactors) {
+		const kind = classifyBound(raw);
+		if (kind === "constant") continue;
+		counts.set(kind, (counts.get(kind) ?? 0) + 1);
+	}
+
+	const normalized: string[] = [];
+
+	if ((counts.get("log n") ?? 0) > 0) {
+		normalized.push("log n");
+	}
+
+	const nCount = counts.get("n") ?? 0;
+	if (nCount === 1) normalized.push("n");
+	if (nCount > 1) normalized.push(`n^${nCount}`);
+
+	return normalized;
+}
+
+function detectLogLoop(line: string, lang: Exclude<Lang, "auto">): boolean {
+	const t = line.trim();
+
+	if (lang === "python") {
+		return /\bwhile\b.+(?:\/\/=|\*=)\s*\d+/i.test(t);
+	}
+
+	if (!/\bfor\b|\bwhile\b/.test(t)) return false;
+
+	return /(?:\*=|\/=|>>=|<<=)\s*\d+/.test(t);
+}
+
 export function analyse(code: string, chosen_lang: Lang = "auto"): AnalysisResult {
 	const raw = code ?? "";
 
@@ -95,6 +147,7 @@ export function analyse(code: string, chosen_lang: Lang = "auto"): AnalysisResul
 
 	let maxDepth = 0;
 	let maxProductFactors: string[] = [];
+	let hasLogLoop = false;
 
 	const recordProduct = () => {
 		if (stack.length === 0) return;
@@ -122,6 +175,7 @@ export function analyse(code: string, chosen_lang: Lang = "auto"): AnalysisResul
 			if (isLoop) {
 				const bound = extractLoopBound(t, lang) ?? "n";
 				stack.push({ level: braceDepth + 1, bound });
+				hasLogLoop ||= detectLogLoop(t, lang);
 				maxDepth = Math.max(maxDepth, stack.length);
 				recordProduct();
 			}
@@ -144,6 +198,7 @@ export function analyse(code: string, chosen_lang: Lang = "auto"): AnalysisResul
 			if (isLoop) {
 				const bound = extractLoopBound(t, lang) ?? "n";
 				stack.push({ level: indent, bound });
+				hasLogLoop ||= detectLogLoop(t, lang);
 				maxDepth = Math.max(maxDepth, stack.length);
 				recordProduct();
 			}
@@ -155,6 +210,7 @@ export function analyse(code: string, chosen_lang: Lang = "auto"): AnalysisResul
 	// -----------------------
 	const tags: string[] = [];
 	const why: string[] = [];
+	const normalizedFactors = normalizeFactors(maxProductFactors);
 
 	const hasSort = profile.sortRegexes.some(re => safeTest(re, text));
 	if (hasSort) {
@@ -167,23 +223,28 @@ export function analyse(code: string, chosen_lang: Lang = "auto"): AnalysisResul
 	// -----------------------
 	const timeCandidates: Complexity[] = [];
 
-	if (maxProductFactors.length === 1) {
-		const bigO = bigOFromFactors(maxProductFactors);
+	if (normalizedFactors.length === 1) {
+		const bigO = bigOFromFactors(normalizedFactors);
 		timeCandidates.push({ bigO, confidence: 0.6 });
-		why.push(`Detected loop bounded by ${maxProductFactors[0]}, suggesting ${bigO}.`);
+		why.push(`Detected loop bounded by ${maxProductFactors[0]}, normalized to ${bigO}.`);
 	}
 
-	if (maxProductFactors.length >= 2) {
-		const bigO = bigOFromFactors(maxProductFactors);
+	if (normalizedFactors.length >= 2) {
+		const bigO = bigOFromFactors(normalizedFactors);
 		timeCandidates.push({ bigO, confidence: 0.65 });
 		why.push(
-		`Detected nested loops with bounds ${maxProductFactors.join(" * ")}, suggesting ${bigO}.`
+		`Detected nested loops with bounds ${maxProductFactors.join(" * ")}, normalized to ${bigO}.`
 		);
 	}
 
-	if (maxDepth >= 2 && maxProductFactors.length < 2) {
+	if (maxDepth >= 2 && normalizedFactors.length < 2) {
 		timeCandidates.push({ bigO: "O(n^2)", confidence: 0.45 });
 		why.push("Nested loop depth >= 2 suggests quadratic behaviour.");
+	}
+
+	if (hasLogLoop) {
+		timeCandidates.push({ bigO: "O(log n)", confidence: 0.58 });
+		why.push("Detected multiplicative/divisive loop progression, suggesting logarithmic behaviour.");
 	}
 
 	if (hasSort) {
