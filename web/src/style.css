@@ -1,63 +1,115 @@
-* { box-sizing: border-box; }
+* { 
+  box-sizing: border-box; 
+}
 
 body {
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-}
-
-.container {
   min-height: 100vh;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
 }
 
-.row {
-  padding: 20q;
-  border: 1q solid black;
-  margin-bottom: 12px;
-
+.container {
+  width: 95%;
+  max-width: 1400px;
+  width: 800px;
+  padding: 60px 20px;
   display: flex;
-  gap: 10px;
+  flex-direction: column;
   align-items: center;
 }
 
+.row,
+.output {
+  width: 100%;
+  max-width: 1200px;
+
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
 .row textarea {
-  width: 80vw;
-  max-width: 700px;
-  padding: 12px;
-  font-size: 16px;
+  flex: 1;
+  padding: 16px;
+  font-size: 15px;
   resize: vertical;
   font-family: monospace;
   line-height: 1.4;
+
+  border-radius: 12px;
+  border: none;
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.row textarea::placeholder {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .language-select {
-  padding: 12px;
-  font-size: 16px;
+  padding: 14px;
+  font-size: 14px;
+  border-radius: 12px;
+  border: none;
   cursor: pointer;
+
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
 .but button {
-  width: 30vw;
-  max-width: 250px;
-  padding: 8px;
-  font-size: 12px;
+  width: 250px;
+  padding: 12px;
+  font-size: 14px;
+  margin-bottom: 30px;
+
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+
+  transition: 0.2s ease;
 }
 
-.output {
-  margin-top: 16px;
-  width: 80vw;
-  max-width: 900px;
-  border: 1q solid black;
-  padding: 16px;
+.but button:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: translateY(-2px);
+}
+
+.output p {
+  color: white;
 }
 
 .output pre {
-  margin: 0;
-  padding: 12px;
-  border: 1q solid black;
+  margin-top: 12px;
+  padding: 14px;
+
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+
   white-space: pre-wrap;
   word-break: break-word;
 }
