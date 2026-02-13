@@ -35,6 +35,23 @@ function pickDominant(candidates: Complexity[]): Complexity {
 	}, list[0] ?? { bigO: "O(?)", confidence: 0.25 });
 }
 
+function detectAutoLang(raw: string): Exclude<Lang, "auto"> {
+  const s = raw ?? "";
+
+  if (/\bdef\s+[A-Za-z_]\w*\s*\(/.test(s)) return "python";
+  if (/^\s*(?:import|from)\s+\w+/m.test(s) && /:\s*$/m.test(s)) return "python";
+
+  if (/^\s*#\s*include\b/m.test(s)) return "c";
+  if (/\b(int|char|long|short|float|double|size_t|void)\s+\**\s*[A-Za-z_]\w*\s*\([^;]*\)\s*\{/m.test(s)) return "c";
+
+  if (/\b(class|interface|enum)\s+[A-Za-z_]\w*/.test(s)) return "java";
+  if (/\bpublic\s+static\s+void\s+main\s*\(/.test(s)) return "java";
+
+  if (/[{};]/.test(s)) return "java";
+
+  return "python";
+}
+
 function extractLoopBound(line: string, lang: Exclude<Lang, "auto">): string | null {
 	const t = line.trim();
 
@@ -123,11 +140,26 @@ function detectRecursionComplexity(text: string, lang: Exclude<Lang, "auto">): "
 	}
 
 	const names = new Set<string>();
-	{
-		const declRe = /^\s*(?:public|private|protected|static|final|synchronized|native|abstract|\s)*[A-Za-z_]\w*(?:\s*<[^>]+>)?(?:\s*\[[^\]]+\])?\s+([A-Za-z_]\w*)\s*\([^)]*\)\s*\{/gm;
+
+	if (lang === "c") {
+		const cDeclRe =
+			/^\s*(?:[A-Za-z_]\w*\s+)*\**\s*([A-Za-z_]\w*)\s*\([^;]*\)\s*\{/gm;
+
 		let m: RegExpExecArray | null;
-		while ((m = declRe.exec(text))) names.add(m[1]);
+		while ((m = cDeclRe.exec(text))) {
+			names.add(m[1]);
+		}
+
+	} else {
+		const javaDeclRe =
+			/^\s*(?:public|private|protected|static|final|synchronized|native|abstract|\s)*[A-Za-z_]\w*(?:\s*<[^>]+>)?(?:\s*\[[^\]]+\])?\s+([A-Za-z_]\w*)\s*\([^)]*\)\s*\{/gm;
+
+		let m: RegExpExecArray | null;
+		while ((m = javaDeclRe.exec(text))) {
+			names.add(m[1]);
+		}
 	}
+
 
 	for (const name of names) {
 		const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -154,7 +186,8 @@ function canonicalLoopComplexity(maxDepth: number, hasLogLoop: boolean, loopCoun
 
 export function analyse(code: string, chosenLang: Lang = "auto"): AnalysisResult {
 	const raw = code ?? "";
-	const lang: Exclude<Lang, "auto"> = chosenLang === "auto" ? "python" : chosenLang;
+	const lang: Exclude<Lang, "auto"> = chosenLang === "auto" ? detectAutoLang(raw) : chosenLang;
+
 	const profile = PROFILES[lang];
 	const text = profile.removeComments(raw);
 
